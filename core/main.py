@@ -45,6 +45,8 @@ async def add_task(data:TaskADDshema, session:SessionDep):
 async def get_tasks(session:SessionDep):
     query = select(TaskModel)
     result = await session.execute(query)
+    if not result.scalars().all():
+        raise HTTPException(status_code=404, detail="list is empty")
     return result.scalars().all()
 
 @app.get("/tasks/{id}")
@@ -56,14 +58,23 @@ async def get_task(session:SessionDep, id:int):
 
 @app.delete("/tasks/{id}")
 async def remove_task(session:SessionDep, id:int):
-    
     query = delete(TaskModel).where(TaskModel.id==id)
-    await session.execute(query)
+    
+    result = await session.execute(query)
+    task = result.scalar_one_or_none
+    if task is None:
+        raise HTTPException(status_code=404, detail="task isn't found")
     await session.commit()
     return {"is_OK":True}
     
 @app.put("/tasks/{id}")
 async def update_task(id:int, session:SessionDep, data:TaskADDshema):
+    query = select(TaskModel).where(TaskModel.id == id)
+    result = await session.execute(query)
+    task = result.scalar_one_or_none()
+    if task is None:
+        raise HTTPException(status_code=404, detail="task isn't found")
+
     new_task = {
         "name": data.TaskName,
         "text": data.TaskText,
