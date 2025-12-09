@@ -1,29 +1,24 @@
 from typing import Annotated
 from fastapi import FastAPI, Depends, HTTPException
+##
 from Schemas import TaskADDshema, TaskSchema
-from sqlalchemy.orm import create_session, DeclarativeBase, Mapped, mapped_column
+from Models import TaskModel, Base
+##
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy import select, delete, update
-
+from Models import TaskModel
 
 app = FastAPI()
 engine = create_async_engine("sqlite+aiosqlite:///lists_database.db")
+
 async def get_session():
     async with new_session() as session:
         yield session
-class Base(DeclarativeBase):
-    pass
+
 
 new_session = async_sessionmaker(engine, expire_on_commit=False)
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
-
-class TaskModel(Base):
-    __tablename__="Tasks"
-    id: Mapped[int]=mapped_column(primary_key=True)
-    name: Mapped[str]
-    text: Mapped[str]
-    status: Mapped[str]
 
 
 @app.post("/setup_db")
@@ -36,7 +31,7 @@ async def setup_db():
 @app.post("/tasks")
 async def add_task(data:TaskADDshema, session:SessionDep):
     new_task = TaskModel(
-        name = data.TaskName,
+        name = data.TaskName, 
         text=data.TaskText,
         status=data.TaskStatus
     )
@@ -45,6 +40,7 @@ async def add_task(data:TaskADDshema, session:SessionDep):
     session.add(new_task)
     await session.commit()
     return {"ok":True}
+
 @app.get("/tasks")
 async def get_tasks(session:SessionDep):
     query = select(TaskModel)
@@ -78,3 +74,5 @@ async def update_task(id:int, session:SessionDep, data:TaskADDshema):
             .values(**new_task)
     await session.execute(query)
     await session.commit()
+
+
