@@ -8,8 +8,10 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from sqlalchemy import select, delete, update
 from Models import TaskModel
 
+
+
 app = FastAPI()
-engine = create_async_engine("sqlite+aiosqlite:///lists_database.db")
+engine = create_async_engine("sqlite+aiosqlite:///database.db")
 
 async def get_session():
     async with new_session() as session:
@@ -45,15 +47,20 @@ async def add_task(data:TaskADDshema, session:SessionDep):
 async def get_tasks(session:SessionDep):
     query = select(TaskModel)
     result = await session.execute(query)
-    if not result.scalars().all():
+    tasks = result.scalars().all()
+    if not tasks:
         raise HTTPException(status_code=404, detail="list is empty")
-    return result.scalars().all()
+    
+    return tasks
 
 @app.get("/tasks/{id}")
 async def get_task(session:SessionDep, id:int):
     query = select(TaskModel).where(TaskModel.id==id)
     result = await session.execute(query)
-    return result.scalars().all()
+    tasks = result.scalars().all()
+    if not tasks:
+        raise HTTPException(status_code=404, detail="cant find task with this ID")
+    return tasks
 
 
 @app.delete("/tasks/{id}")
@@ -63,7 +70,7 @@ async def remove_task(session:SessionDep, id:int):
     result = await session.execute(query)
     task = result.scalar_one_or_none
     if task is None:
-        raise HTTPException(status_code=404, detail="task isn't found")
+        raise HTTPException(status_code=404, detail="task not found")
     await session.commit()
     return {"is_OK":True}
     
