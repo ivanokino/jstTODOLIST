@@ -17,7 +17,6 @@ async def get_session():
     async with new_session() as session:
         yield session
 
-
 new_session = async_sessionmaker(engine, expire_on_commit=False)
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
@@ -30,18 +29,21 @@ async def setup_db():
         await conn.run_sync(Base.metadata.create_all)
     return {"ok":True}
 
+
 @app.post("/tasks")
 async def add_task(data:TaskADDshema, session:SessionDep):
     new_task = TaskModel(
         name = data.TaskName, 
         text=data.TaskText,
-        status=data.TaskStatus
+        status=data.TaskStatus,
+        deadline = data.TashDeadline
     )
     if new_task.name=="":
         raise HTTPException(status_code=400, detail="name is empty")
     session.add(new_task)
     await session.commit()
     return {"ok":True}
+
 
 @app.get("/tasks")
 async def get_tasks(session:SessionDep):
@@ -52,6 +54,7 @@ async def get_tasks(session:SessionDep):
         raise HTTPException(status_code=404, detail="list is empty")
     
     return tasks
+
 
 @app.get("/tasks/{id}")
 async def get_task(session:SessionDep, id:int):
@@ -73,7 +76,8 @@ async def remove_task(session:SessionDep, id:int):
         raise HTTPException(status_code=404, detail="task not found")
     await session.commit()
     return {"is_OK":True}
-    
+
+
 @app.put("/tasks/{id}")
 async def update_task(id:int, session:SessionDep, data:TaskADDshema):
     query = select(TaskModel).where(TaskModel.id == id)
@@ -85,12 +89,22 @@ async def update_task(id:int, session:SessionDep, data:TaskADDshema):
     new_task = {
         "name": data.TaskName,
         "text": data.TaskText,
-        "status":data.TaskStatus
+        "status":data.TaskStatus,
+        "deadline":data.TashDeadline
     }
     query = update(TaskModel)\
             .where(TaskModel.id == id)\
             .values(**new_task)
     await session.execute(query)
     await session.commit()
+    return {"ok":True}
 
 
+@app.get("/tasks_page")
+async def get_page(session:SessionDep, limit:int, offset:int):
+    query = select(TaskModel).limit(limit).offset(offset)
+    result = await session.execute(query)
+    tasks = result.scalars().all()
+    if tasks is None:
+        raise HTTPException(status_code=404, detail="tasks isn't found")
+    return tasks

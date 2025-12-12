@@ -1,7 +1,9 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import DateTime
 from datetime import datetime, timezone
-import pytz
+
+
+
 class Base(DeclarativeBase):
     pass
 
@@ -14,11 +16,9 @@ class TaskModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc).replace(
-            second=0, 
             microsecond=0
         ),
         nullable=False
     )
-    
+    deadline: Mapped[str]
 
-    
