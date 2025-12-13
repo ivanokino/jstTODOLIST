@@ -1,28 +1,16 @@
-from typing import Annotated
-from fastapi import FastAPI, Depends, HTTPException
-##
-from Schemas import TaskADDshema, TaskSchema
-from Models import TaskModel, Base
-##
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from sqlalchemy import select, delete, update
-from Models import TaskModel
+from fastapi import APIRouter, HTTPException
+
+from database import engine
+from models.TaskModels import TaskModel  
+from database import Base, SessionDep
+from schemas.TaskSchemas import TaskSchema
+
+router = APIRouter()
 
 
 
-app = FastAPI()
-engine = create_async_engine("sqlite+aiosqlite:///database.db")
-
-async def get_session():
-    async with new_session() as session:
-        yield session
-
-new_session = async_sessionmaker(engine, expire_on_commit=False)
-SessionDep = Annotated[AsyncSession, Depends(get_session)]
-
-
-
-@app.post("/setup_db")
+@router.post("/setup_db")
 async def setup_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -30,8 +18,8 @@ async def setup_db():
     return {"ok":True}
 
 
-@app.post("/tasks")
-async def add_task(data:TaskADDshema, session:SessionDep):
+@router.post("/tasks")
+async def add_task(data:TaskSchema, session:SessionDep):
     new_task = TaskModel(
         name = data.TaskName, 
         text=data.TaskText,
@@ -45,7 +33,7 @@ async def add_task(data:TaskADDshema, session:SessionDep):
     return {"ok":True}
 
 
-@app.get("/tasks")
+@router.get("/tasks")
 async def get_tasks(session:SessionDep):
     query = select(TaskModel)
     result = await session.execute(query)
@@ -56,7 +44,7 @@ async def get_tasks(session:SessionDep):
     return tasks
 
 
-@app.get("/tasks/{id}")
+@router.get("/tasks/{id}")
 async def get_task(session:SessionDep, id:int):
     query = select(TaskModel).where(TaskModel.id==id)
     result = await session.execute(query)
@@ -66,7 +54,7 @@ async def get_task(session:SessionDep, id:int):
     return tasks
 
 
-@app.delete("/tasks/{id}")
+@router.delete("/tasks/{id}")
 async def remove_task(session:SessionDep, id:int):
     query = delete(TaskModel).where(TaskModel.id==id)
     
@@ -78,8 +66,8 @@ async def remove_task(session:SessionDep, id:int):
     return {"is_OK":True}
 
 
-@app.put("/tasks/{id}")
-async def update_task(id:int, session:SessionDep, data:TaskADDshema):
+@router.put("/tasks/{id}")
+async def update_task(id:int, session:SessionDep, data:TaskSchema):
     query = select(TaskModel).where(TaskModel.id == id)
     result = await session.execute(query)
     task = result.scalar_one_or_none()
@@ -100,7 +88,7 @@ async def update_task(id:int, session:SessionDep, data:TaskADDshema):
     return {"ok":True}
 
 
-@app.get("/tasks_page")
+@router.get("/tasks_page")
 async def get_page(session:SessionDep, limit:int, offset:int):
     query = select(TaskModel).limit(limit).offset(offset)
     result = await session.execute(query)

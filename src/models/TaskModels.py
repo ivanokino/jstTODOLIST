@@ -1,11 +1,9 @@
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import DateTime
 from datetime import datetime, timezone
+from database import Base
 
 
-
-class Base(DeclarativeBase):
-    pass
 
 class TaskModel(Base):
     __tablename__="Tasks"
@@ -21,4 +19,3 @@ class TaskModel(Base):
         nullable=False
     )
     deadline: Mapped[str]
-
