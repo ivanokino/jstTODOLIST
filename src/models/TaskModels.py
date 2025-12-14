@@ -8,7 +8,7 @@ from database import Base
 class TaskModel(Base):
     __tablename__="Tasks"
     id: Mapped[int]=mapped_column(primary_key=True)
-    name: Mapped[str]
+    name: Mapped[str] 
     text: Mapped[str]
     status: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(

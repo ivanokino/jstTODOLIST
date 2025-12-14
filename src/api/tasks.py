@@ -21,10 +21,10 @@ async def setup_db():
 @router.post("/tasks")
 async def add_task(data:TaskSchema, session:SessionDep):
     new_task = TaskModel(
-        name = data.TaskName, 
-        text=data.TaskText,
-        status=data.TaskStatus,
-        deadline = data.TashDeadline
+        name = data.name, 
+        text=data.text,
+        status=data.status,
+        deadline = data.deadline
     )
     if new_task.name=="":
         raise HTTPException(status_code=400, detail="name is empty")
@@ -55,7 +55,7 @@ async def get_task(session:SessionDep, id:int):
 
 
 @router.delete("/tasks/{id}")
-async def remove_task(session:SessionDep, id:int):
+async def delete_task(session:SessionDep, id:int):
     query = delete(TaskModel).where(TaskModel.id==id)
     
     result = await session.execute(query)
@@ -75,10 +75,10 @@ async def update_task(id:int, session:SessionDep, data:TaskSchema):
         raise HTTPException(status_code=404, detail="task isn't found")
 
     new_task = {
-        "name": data.TaskName,
-        "text": data.TaskText,
-        "status":data.TaskStatus,
-        "deadline":data.TashDeadline
+        "name": data.name,
+        "text": data.text,
+        "status":data.status,
+        "deadline":data.deadline
     }
     query = update(TaskModel)\
             .where(TaskModel.id == id)\
