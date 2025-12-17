@@ -7,8 +7,8 @@ class UserModel(Base):
     
     user_id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str]
-    hashed_password: Mapped[str]  
-    
+    hashed_password: Mapped[str] 
+     
     def set_password(self, password):
         self.hashed_password = generate_password_hash(password)
     

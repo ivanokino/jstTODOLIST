@@ -11,13 +11,11 @@ main_router.include_router(tasks_router)
 main_router.include_router(users_router)
 app.include_router(main_router)
 
+
 @app.get("/")
 async def main():
-    return {"ok":True}
+    return {"ok": True}
+
 
 if __name__ == "__main__":
-    uvicorn.run(
-        app="main:app",
-        host="0.0.0.0",
-        reload=True
-    )
+    uvicorn.run(app="main:app", host="0.0.0.0", reload=True)

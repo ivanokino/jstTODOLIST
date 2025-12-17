@@ -2,12 +2,11 @@ from sqlalchemy import select, delete, update
 from fastapi import APIRouter, HTTPException
 
 from database import engine
-from models.TaskModels import TaskModel  
+from models.TaskModels import TaskModel
 from database import Base, SessionDep
 from schemas.TaskSchemas import TaskSchema
 
 router = APIRouter()
-
 
 
 @router.post("/setup_db")
@@ -15,38 +14,35 @@ async def setup_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
-    return {"ok":True}
+    return {"ok": True}
 
 
 @router.post("/tasks")
-async def add_task(data:TaskSchema, session:SessionDep):
+async def add_task(data: TaskSchema, session: SessionDep):
     new_task = TaskModel(
-        name = data.name, 
-        text=data.text,
-        status=data.status,
-        deadline = data.deadline
+        name=data.name, text=data.text, status=data.status, deadline=data.deadline
     )
-    if new_task.name=="":
+    if new_task.name == "":
         raise HTTPException(status_code=400, detail="name is empty")
     session.add(new_task)
     await session.commit()
-    return {"ok":True}
+    return {"ok": True}
 
 
 @router.get("/tasks")
-async def get_tasks(session:SessionDep):
+async def get_tasks(session: SessionDep):
     query = select(TaskModel)
     result = await session.execute(query)
     tasks = result.scalars().all()
     if not tasks:
         raise HTTPException(status_code=404, detail="list is empty")
-    
+
     return tasks
 
 
 @router.get("/tasks/{id}")
-async def get_task(session:SessionDep, id:int):
-    query = select(TaskModel).where(TaskModel.id==id)
+async def get_task(session: SessionDep, id: int):
+    query = select(TaskModel).where(TaskModel.id == id)
     result = await session.execute(query)
     tasks = result.scalars().all()
     if not tasks:
@@ -55,19 +51,19 @@ async def get_task(session:SessionDep, id:int):
 
 
 @router.delete("/tasks/{id}")
-async def delete_task(session:SessionDep, id:int):
-    query = delete(TaskModel).where(TaskModel.id==id)
-    
+async def delete_task(session: SessionDep, id: int):
+    query = delete(TaskModel).where(TaskModel.id == id)
+
     result = await session.execute(query)
     task = result.scalar_one_or_none
     if task is None:
         raise HTTPException(status_code=404, detail="task not found")
     await session.commit()
-    return {"is_OK":True}
+    return {"is_OK": True}
 
 
 @router.put("/tasks/{id}")
-async def update_task(id:int, session:SessionDep, data:TaskSchema):
+async def update_task(id: int, session: SessionDep, data: TaskSchema):
     query = select(TaskModel).where(TaskModel.id == id)
     result = await session.execute(query)
     task = result.scalar_one_or_none()
@@ -77,19 +73,17 @@ async def update_task(id:int, session:SessionDep, data:TaskSchema):
     new_task = {
         "name": data.name,
         "text": data.text,
-        "status":data.status,
-        "deadline":data.deadline
+        "status": data.status,
+        "deadline": data.deadline,
     }
-    query = update(TaskModel)\
-            .where(TaskModel.id == id)\
-            .values(**new_task)
+    query = update(TaskModel).where(TaskModel.id == id).values(**new_task)
     await session.execute(query)
     await session.commit()
-    return {"ok":True}
+    return {"ok": True}
 
 
 @router.get("/tasks_page")
-async def get_page(session:SessionDep, limit:int, offset:int):
+async def get_page(session: SessionDep, limit: int, offset: int):
     query = select(TaskModel).limit(limit).offset(offset)
     result = await session.execute(query)
     tasks = result.scalars().all()

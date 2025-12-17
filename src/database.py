@@ -5,6 +5,9 @@ from sqlalchemy.orm import DeclarativeBase
 
 engine = create_async_engine("sqlite+aiosqlite:///database.db")
 
+class Base(DeclarativeBase):
+    pass
+
 async def get_session():
     async with new_session() as session:
         yield session
@@ -12,8 +15,6 @@ async def get_session():
 new_session = async_sessionmaker(engine, expire_on_commit=False)
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
-class Base(DeclarativeBase):
-    pass
 
 async def init_db():
     async with engine.begin() as conn:
@@ -23,8 +24,9 @@ async def init_db():
 users_engine = create_async_engine("sqlite+aiosqlite:///users_db.db")
 new_users_session = async_sessionmaker(users_engine, expire_on_commit=False)
 
-
 async def get_users_session():
     async with new_users_session() as session:
         yield session
+
+
 UsersSessionDep = Annotated[AsyncSession, Depends(get_users_session)]
