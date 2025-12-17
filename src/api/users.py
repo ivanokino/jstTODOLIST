@@ -1,5 +1,5 @@
 from authx import AuthXConfig, AuthX
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
 from schemas.UserSchemas import UserSchema
 from database import UsersSessionDep, users_engine, Base
 from sqlalchemy import select
@@ -9,8 +9,9 @@ router = APIRouter()
 
 config = AuthXConfig()
 config.JWT_SECRET_KEY = "wkHf2u324keg2s4o1s"
+config.JWT_TOKEN_LOCATION = ["cookies"]
 config.JWT_ACCESS_COOKIE_NAME = "JWT_access_token"
-config.JWT_ACCESS_COOKIE_PATH = "/"
+
 security = AuthX(config=config)
 
 
@@ -31,7 +32,6 @@ async def create_user(data: UserSchema, session: UsersSessionDep):
     if existing_user:
         raise HTTPException(status_code=400, detail="User is already exist")
     
-
     new_user = UserModel(
         username=data.name,
     )
@@ -44,3 +44,18 @@ async def create_user(data: UserSchema, session: UsersSessionDep):
         "name":new_user.username,
         "id":new_user.user_id
     }
+
+@router.post("/login")
+async def login(creds: UserSchema, session: UsersSessionDep, respone:Response):
+    query = select(UserModel).where(UserModel.username==creds.name)
+    result = await session.execute(query)
+    db_user = result.scalar_one_or_none()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="user not found") 
+    
+    if db_user.check_password(creds.password):
+        token = security.create_access_token(uid=str(db_user.user_id))
+        respone.set_cookie(config.JWT_ACCESS_COOKIE_NAME, token)
+        return {"token": token}
+        
+    raise HTTPException(status_code=401, detail="incorrect username or password")
