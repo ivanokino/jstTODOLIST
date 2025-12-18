@@ -1,3 +1,4 @@
+from authx import AuthX
 import pytest
 from httpx import AsyncClient, ASGITransport
 from main import app
@@ -5,6 +6,10 @@ from database import init_db
 from models.TaskModels import TaskModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from database import engine
+from unittest.mock import patch
+
+
+
 task = TaskModel(
             name="Test Task",
             text="text",
@@ -16,18 +21,27 @@ schema_task = {"name":"Test Task",
     "status":"status",
     "deadline":"2027-12-31"}
 
+
 async def setup_bd():
     await init_db()
     async with AsyncSession(engine) as session:
         session.add(task)
         await session.commit()
+   
+
+@pytest.fixture(autouse=True)
+def mock_authx():
+    with patch.object(AuthX, '_auth_required') as mock:
+        mock.return_value = {"user_id": 1, "username": "test"}
+        yield
 
 @pytest.mark.asyncio
 async def test_get_task():
     await setup_bd()
     
     async with AsyncClient(transport=ASGITransport(app=app),
-                           base_url="http://test") as ac:
+                           base_url="http://test",
+                           ) as ac:
         
         response = await ac.get("/tasks")
         assert response.status_code in [200, 400]
@@ -35,12 +49,12 @@ async def test_get_task():
 @pytest.mark.asyncio
 async def test_add_task():
     await setup_bd()
-
     async with AsyncClient(transport=ASGITransport(app=app),
                            base_url="http://test") as ac:
         
         response = await ac.post("/tasks", json=schema_task)
         assert response.status_code == 200
+
 @pytest.mark.asyncio
 async def test_update_task():
     await setup_bd()

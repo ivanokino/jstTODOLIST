@@ -3,7 +3,7 @@ from fastapi import Depends
 from typing import Annotated
 from sqlalchemy.orm import DeclarativeBase
 
-engine = create_async_engine("sqlite+aiosqlite:///database.db")
+engine = create_async_engine("sqlite+aiosqlite:///tasks.db")
 
 class Base(DeclarativeBase):
     pass
@@ -21,7 +21,7 @@ async def init_db():
         await conn.run_sync(Base.metadata.create_all)
 
 
-users_engine = create_async_engine("sqlite+aiosqlite:///users_db.db")
+users_engine = create_async_engine("sqlite+aiosqlite:///users.db")
 new_users_session = async_sessionmaker(users_engine, expire_on_commit=False)
 
 async def get_users_session():

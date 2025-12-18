@@ -1,11 +1,11 @@
 from sqlalchemy import select, delete, update
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 
 from database import engine
 from models.TaskModels import TaskModel
 from database import Base, SessionDep
 from schemas.TaskSchemas import TaskSchema
-
+from api.users import security
 router = APIRouter()
 
 
@@ -17,7 +17,7 @@ async def setup_db():
     return {"ok": True}
 
 
-@router.post("/tasks")
+@router.post("/tasks", dependencies=[Depends(security.access_token_required)])
 async def add_task(data: TaskSchema, session: SessionDep):
     new_task = TaskModel(
         name=data.name, text=data.text, status=data.status, deadline=data.deadline
@@ -29,7 +29,7 @@ async def add_task(data: TaskSchema, session: SessionDep):
     return {"ok": True}
 
 
-@router.get("/tasks")
+@router.get("/tasks", dependencies=[Depends(security.access_token_required)])
 async def get_tasks(session: SessionDep):
     query = select(TaskModel)
     result = await session.execute(query)
@@ -40,29 +40,32 @@ async def get_tasks(session: SessionDep):
     return tasks
 
 
-@router.get("/tasks/{id}")
+@router.get("/tasks/{id}", dependencies=[Depends(security.access_token_required)])
 async def get_task(session: SessionDep, id: int):
     query = select(TaskModel).where(TaskModel.id == id)
     result = await session.execute(query)
-    tasks = result.scalars().all()
+    tasks = result.scalars().one_or_none()
     if not tasks:
         raise HTTPException(status_code=404, detail="cant find task with this ID")
     return tasks
 
 
-@router.delete("/tasks/{id}")
+@router.delete("/tasks/{id}", dependencies=[Depends(security.access_token_required)])
 async def delete_task(session: SessionDep, id: int):
-    query = delete(TaskModel).where(TaskModel.id == id)
-
-    result = await session.execute(query)
-    task = result.scalar_one_or_none
+    query_check = select(TaskModel).where(TaskModel.id == id)
+    result_check = await session.execute(query_check)
+    task = result_check.scalar_one_or_none()
+    
     if task is None:
         raise HTTPException(status_code=404, detail="task not found")
+    query = delete(TaskModel).where(TaskModel.id == id)
+    result = await session.execute(query)
     await session.commit()
+
     return {"is_OK": True}
 
 
-@router.put("/tasks/{id}")
+@router.put("/tasks/{id}", dependencies=[Depends(security.access_token_required)])
 async def update_task(id: int, session: SessionDep, data: TaskSchema):
     query = select(TaskModel).where(TaskModel.id == id)
     result = await session.execute(query)
@@ -82,7 +85,7 @@ async def update_task(id: int, session: SessionDep, data: TaskSchema):
     return {"ok": True}
 
 
-@router.get("/tasks_page")
+@router.get("/tasks_page", dependencies=[Depends(security.access_token_required)])
 async def get_page(session: SessionDep, limit: int, offset: int):
     query = select(TaskModel).limit(limit).offset(offset)
     result = await session.execute(query)

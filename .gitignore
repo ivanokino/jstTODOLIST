@@ -208,6 +208,6 @@ __marimo__/
 
 
 
-database.db
+tasks.db
 
-users_db.db
+users.db
