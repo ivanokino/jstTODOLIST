@@ -8,7 +8,7 @@ from models.UserModels import UserModel
 router = APIRouter()
 
 config = AuthXConfig()
-config.JWT_SECRET_KEY = "wkHf2u324keg2s4o1s"
+config.JWT_SECRET_KEY = "EteBsLAtN"
 config.JWT_TOKEN_LOCATION = ["cookies"]
 config.JWT_ACCESS_COOKIE_NAME = "JWT_access_token"
  
